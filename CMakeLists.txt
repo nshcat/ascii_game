@@ -11,6 +11,7 @@ add_subdirectory(cl)
 add_subdirectory(log)
 add_subdirectory(ut)
 add_subdirectory(btt)
+add_subdirectory(sol2)
 
 # Source files
 file(GLOB SOURCE_FILES src/*.cxx)
@@ -27,7 +28,7 @@ if(MINGW OR MSYS)
 	set_target_properties(ascii_game PROPERTIES COMPILE_FLAGS "-I/mingw64/include/SDL2")
 		
 	# Link to support libraries
-	target_link_libraries(ascii_game PUBLIC mingw32 sdl2main sdl2 sdl2_image ${LIBBTT_LIBRARIES} ${LIBUT_LIBRARIES} ${LIBCL_LIBRARIES} ${LIBLOG_LIBRARIES})
+	target_link_libraries(ascii_game PUBLIC mingw32 sdl2main sdl2 sdl2_image ${LIBSOL2_LIBRARIES} ${LIBBTT_LIBRARIES} ${LIBUT_LIBRARIES} ${LIBCL_LIBRARIES} ${LIBLOG_LIBRARIES})
 	
 # Use find_package to retrieve SDL2 paths
 else()
@@ -39,7 +40,7 @@ else()
 	target_include_directories(ascii_game PUBLIC ${SDL2_INCLUDE_DIR} ${SDL2_IMAGE_INCLUDE_DIR})
 
 	# Link to libraries
-	target_link_libraries(ascii_game PUBLIC ${LIBBTT_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARY} ${LIBUT_LIBRARIES} ${LIBCL_LIBRARIES} ${LIBLOG_LIBRARIES})
+	target_link_libraries(ascii_game PUBLIC ${LIBSOL2_LIBRARIES} ${LIBBTT_LIBRARIES} ${SDL2_LIBRARY} ${SDL2_IMAGE_LIBRARY} ${LIBUT_LIBRARIES} ${LIBCL_LIBRARIES} ${LIBLOG_LIBRARIES})
 endif()
 
 # Require support for at least C++14.

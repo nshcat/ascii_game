@@ -2,7 +2,7 @@
 #include <string>
 #include <log.hxx>
 #include <cl.hxx>
-
+#include <sol.hpp>
 
 // Variables referenced by command line handler ---
 //
@@ -17,7 +17,6 @@ bool g_LogToFile;
 std::string g_LogFile;
 
 // ------------------------------------------------
-
 
 
 // Command line argument handler
@@ -85,7 +84,7 @@ int main(int argc, char* argv[])
 	if(g_LogToFile)
 	{	
 		lg::logger::add_target(&t_fileTarget);
-	}
+	}	
 	
 	return EXIT_SUCCESS;
 }
