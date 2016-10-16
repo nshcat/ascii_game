@@ -1,7 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <cstdint>
 #include <tuple>
+
+#include <ut/hash.hxx>
 
 namespace ascii
 {
@@ -30,11 +33,25 @@ namespace ascii
 			{
 				return m_Y;
 			}
+			
+			auto w() const noexcept
+				-> std::size_t
+			{
+				return m_X;
+			}
+			
+			auto h() const noexcept
+				-> std::size_t
+			{
+				return m_Y;
+			}
 		
 		private:
 			std::size_t m_X{};
 			std::size_t m_Y{};
 	};
+	
+	using dimensions = position;
 		
 	struct from_rgb_t{};
 	struct from_hsv_t{};
@@ -49,6 +66,13 @@ namespace ascii
 		using element_tuple_type = std::tuple<element_type, element_type, element_type>;
 				
 		public:
+			color()
+				: m_R{}, m_G{}, m_B{}
+			{
+				
+			}
+			
+		
 			color(from_rgb_t, element_type p_r, element_type p_g, element_type p_b) noexcept
 				: m_R(p_r), m_G(p_g), m_B(p_b)
 			{
@@ -56,9 +80,8 @@ namespace ascii
 			}
 			
 			color(from_rgb_t, element_tuple_type p_vals) noexcept
-				: m_R(std::get<0>(p_vals)), m_G(std::get<1>(p_vals)), m_B(std::get<2>(p_vals))
 			{
-				
+				std::tie(m_R, m_G, m_B) = p_vals;
 			}
 			
 			color(from_hsv_t, element_type p_h, element_type p_s, element_type p_v) noexcept
@@ -101,17 +124,139 @@ namespace ascii
 			{
 				return to_hsv(m_R, m_G, m_B);
 			}
+		
+		public:
+			auto operator==(const color& p_rhs) const noexcept
+				-> bool
+			{
+				return rgb() == p_rhs.rgb();
+			}
+			
+			auto operator!=(const color& p_rhs) const noexcept
+				-> bool
+			{
+				return !(*this == p_rhs);
+			}
 			
 		private:
-			auto to_rgb(element_type p_h, element_type p_s, element_type p_h) noexcept
+			auto to_rgb(element_type p_h, element_type p_s, element_type p_v) const noexcept
 				-> element_tuple_type;
 				
-			auto to_hsv(element_type p_r, element_type p_g, element_type p_b) noexcept
+			auto to_hsv(element_type p_r, element_type p_g, element_type p_b) const noexcept
 				-> element_tuple_type;
 		
 		private:
 			element_type m_R;
 			element_type m_G;
 			element_type m_B;
-	};	
+	};
+	
+	
+	
+	class glyph_data
+	{
+		public:
+			glyph_data()
+				: m_Glyph{}, m_Front{}, m_Back{}
+			{
+				
+			}
+		
+			glyph_data(glyph_type p_glyph, color p_front, color p_back) noexcept
+				: m_Glyph(p_glyph), m_Front(p_front), m_Back(p_back)
+			{
+				
+			}
+		
+		public:
+			auto operator==(const glyph_data& p_rhs) const noexcept
+				-> bool
+			{
+				return std::tie(m_Glyph, m_Front, m_Back)
+					== std::tie(p_rhs.m_Glyph, p_rhs.m_Front, p_rhs.m_Back);
+			}
+			
+			auto operator!=(const glyph_data& p_rhs) const noexcept
+				-> bool
+			{
+				return !(*this == p_rhs);
+			}
+		
+		public:
+			auto glyph() const noexcept
+				-> glyph_type
+			{
+				return m_Glyph;
+			}
+			
+			auto front() const noexcept
+				-> color
+			{
+				return m_Front;
+			}
+			
+			auto back() const noexcept
+				-> color
+			{
+				return m_Back;
+			}
+			
+			auto empty() const noexcept
+				-> bool
+			{
+				return (*this == glyph_data{});
+			}
+			
+		public:
+			auto clear() noexcept
+				-> void
+			{
+				m_Glyph = {};
+				m_Front = m_Back = color(from_rgb, 0, 0, 0);
+			}
+		
+		private:
+			glyph_type m_Glyph;
+			color m_Front;
+			color m_Back;
+	};
+}
+
+namespace std
+{
+	template<>
+	struct hash <::ascii::color>
+	{
+		using argument_type = ::ascii::color;
+		using result_type = size_t;
+		
+		auto operator()(const argument_type& p_val) const
+			-> result_type
+		{
+			auto t_seed = ut::make_hash(p_val.r());
+			
+			ut::hash_combine(t_seed, p_val.g());
+			ut::hash_combine(t_seed, p_val.b());
+			
+			return t_seed;
+		}
+	};
+	
+	template<>
+	struct hash<::ascii::glyph_data>
+	{
+		using argument_type = ::ascii::glyph_data;
+		using result_type = size_t;
+		
+		auto operator()(const argument_type& p_val) const
+			-> result_type
+		{
+			auto t_seed = ut::make_hash(p_val.glyph());
+			
+			ut::hash_combine(t_seed, p_val.front());
+			ut::hash_combine(t_seed, p_val.back());
+			
+			return t_seed;
+		}
+	};
 }

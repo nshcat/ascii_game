@@ -70,10 +70,10 @@ cl::handler g_Handler
 };
 
 
-int main(int argc, const char* argv[])
+int main(int argc, char* argv[])
 {
 	// Handle command line
-	g_Handler.read(argc, argv);
+	g_Handler.read(argc, (const char**)argv);
 
 	// Init file target
 	lg::file_target<> t_fileTarget(g_LogLevel, g_LogFile);
@@ -86,4 +86,6 @@ int main(int argc, const char* argv[])
 	{	
 		lg::logger::add_target(&t_fileTarget);
 	}
+	
+	return EXIT_SUCCESS;
 }
