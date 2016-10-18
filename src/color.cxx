@@ -58,50 +58,32 @@ namespace ascii
 	// Source: https://www.ruinelli.ch/rgb-to-hsv
 	auto color::to_hsv(element_type p_r, element_type p_g, element_type p_b) const noexcept
 		-> element_tuple_type
-	{
-		std::uint16_t t_h;
-		element_type t_v;
-		element_type t_s;
-		element_type t_min, t_max, t_delta;
-		
-		if(p_r < p_g)
-			t_min = p_r;
-		else
-			t_min = p_g;
-		
-		
-		if(p_r > p_g)
-			t_max = p_r;
-		else
-			t_max = p_g;
-		
-		
-		if(p_b > t_max)
-			t_max = p_b;
-		
-		
-		t_v = t_max;
-		t_delta = t_max - t_min;
-		
-		
-		if(t_max != 0)
-			t_s = static_cast<element_type>((t_delta*255) / t_max);
-		else
+	{	
+		element_type t_rgbMin, t_rgbMax;
+		element_type t_h, t_s, t_v;
+	
+		t_rgbMin = p_r < p_g ? (p_r < p_b ? p_r : p_b) : (p_g < p_b ? p_g : p_b);
+		t_rgbMax = p_r > p_g ? (p_r > p_b ? p_r : p_b) : (p_g > p_b ? p_g : p_b);
+
+		t_v = t_rgbMax;		
+		if(t_v == 0)
 		{
-			return std::make_tuple(element_type{}, element_type{}, element_type{});
+			return std::make_tuple(t_v, t_v, t_v);
 		}
 		
+		t_s = 255 * ((long)t_rgbMax - t_rgbMin) / t_v;
+		if (t_s == 0)
+		{
+			return std::make_tuple(t_s, t_s, t_v);
+		}
 		
-		if(t_max == p_r)
-			t_h = (p_g - p_b) * 60 / t_delta;
-		else if(t_max == p_g)
-			t_h = 120 + (p_b - p_r) * 60 / t_delta;
+		if (t_rgbMax == p_r)
+			t_h = 0 + 43 * (p_g - p_b) / (t_rgbMax - t_rgbMin);
+		else if (t_rgbMax == p_g)
+			t_h = 85 + 43 * (p_b - p_r) / (t_rgbMax - t_rgbMin);
 		else
-			t_h = 240 + (p_r - p_g) * 60 / t_delta;
+			t_h = 171 + 43 * (p_r - p_g) / (t_rgbMax - t_rgbMin);
 		
-		if(t_h < 0)
-			t_h += 360;
-		
-		return std::make_tuple(ut::lmap(t_h, std::uint16_t{}, std::uint16_t{360}, element_type{0}, element_type{255}), t_s, t_v);	
+		return std::make_tuple(t_h, t_s, t_v);
 	}
 }
