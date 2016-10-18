@@ -3,6 +3,9 @@
 #include <log.hxx>
 #include <cl.hxx>
 #include <sol.hpp>
+#include <ut/utility.hxx>
+
+#include <renderer_sdl_cpu.hxx>
 
 // Variables referenced by command line handler ---
 //
@@ -15,6 +18,9 @@ bool g_LogToFile;
 
 // Log file path
 std::string g_LogFile;
+
+// Texture file path
+std::string g_Tex;
 
 // ------------------------------------------------
 
@@ -65,6 +71,14 @@ cl::handler g_Handler
 		cl::long_name("log-file"),
 		cl::default_value<std::string>("ascii_game.log"),
 		cl::reference(g_LogFile)
+	},
+	
+	cl::string_argument
+	{
+		cl::long_name("texture"),
+		cl::short_name('T'),
+		cl::default_value<std::string>(""),
+		cl::reference(g_Tex)
 	}
 };
 
@@ -85,6 +99,45 @@ int main(int argc, char* argv[])
 	{	
 		lg::logger::add_target(&t_fileTarget);
 	}	
+	
+	// Create logger
+	ascii::renderer_params t_info{
+		ascii::dimensions{ 50, 50 },
+		"app",
+		g_Tex
+	};
+	
+	ascii::renderer_sdl_cpu t_renderer{ };
+	
+	t_renderer.create(t_info);
+	
+	while(true)
+	{
+		SDL_Event t_event;
+		
+		while(SDL_PollEvent(&t_event))
+		{
+			switch(t_event.type)
+			{
+				case SDL_QUIT:
+					return EXIT_SUCCESS;
+					break;
+				
+				default:
+					break;
+			}
+		}
+		
+		t_renderer.begin_scene();
+		
+		for(int j = 0; j < 50; ++j)
+			for(int i = 0; i < 50; ++i)
+			{
+				t_renderer.put_glyph({i, j}, (i%16)+16*(j%16), { ascii::from_hsv, i*5, 255, 255 }, { ascii::from_hsv, 0, 0, 0 });
+			}
+			
+		t_renderer.end_scene();
+	}
 	
 	return EXIT_SUCCESS;
 }

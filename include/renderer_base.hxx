@@ -91,14 +91,14 @@ namespace ascii
 			// --- De-/Initialization ---
 			virtual void create(const renderer_params& p_params) = 0;
 			virtual void update_dimensions(dimensions p_val) = 0;
-			virtual void update_title(ut::string_view p_str) = 0;
+			virtual void update_title(const std::string& p_str) = 0;
 			virtual void destroy() = 0;
 			// ---
 			
 			
 			// --- Non-mutable interface ---
 			virtual ut::string_view str() const noexcept = 0;
-			virtual double fps() const noexcept = 0;
+			virtual std::size_t ticks() const noexcept = 0;
 			// ---
 			
 			
@@ -106,6 +106,7 @@ namespace ascii
 			virtual void begin_scene() = 0;
 			virtual void end_scene() = 0;
 			
+			virtual void put_string(position p_pos, ut::string_view p_str, color p_front, color p_back) = 0;
 			virtual void put_glyph(position p_pos, glyph_type p_glyph, color p_front, color p_back) = 0;
 			virtual void put_shadow(position p_pos) = 0;
 			// ---		

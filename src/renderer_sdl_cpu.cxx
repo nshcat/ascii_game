@@ -28,12 +28,11 @@ namespace ascii
 	{
 		return { m_Str };
 	}
-
-	auto renderer_sdl_cpu::init_fps_filter() noexcept
-		-> void
+	
+	auto renderer_sdl_cpu::ticks() const noexcept
+		-> std::size_t
 	{
-		// Fill fps filter with 0.0s.
-		std::fill(std::begin(m_Filter), std::end(m_Filter), 0.0);
+		return SDL_GetTicks();
 	}
 
 	auto renderer_sdl_cpu::destroy()
@@ -60,6 +59,12 @@ namespace ascii
 		SDL_RenderClear(m_Renderer);
 	}
 
+	auto renderer_sdl_cpu::make_index(position p_pos) const noexcept
+		-> std::size_t
+	{
+		return (p_pos.y() * m_ScrW) + p_pos.x();
+	}
+	
 	auto renderer_sdl_cpu::end_scene()
 		-> void
 	{
@@ -70,11 +75,26 @@ namespace ascii
 		SDL_RenderPresent(m_Renderer);
 	}
 
+	auto renderer_sdl_cpu::put_string(position p_pos, ut::string_view p_str, color p_front, color p_back)
+		-> void
+	{
+		for(std::size_t t_idx = 0; t_idx < p_str.length(); ++t_idx)
+		{
+			put_glyph_impl({ p_pos.x() + t_idx, p_pos.y() }, p_str[t_idx], p_front, p_back);
+		}	
+	}
+	
 	auto renderer_sdl_cpu::put_glyph(position p_pos, glyph_type p_glyph, color p_front, color p_back)
 		-> void
 	{
+		put_glyph_impl(p_pos, p_glyph, p_front, p_back);
+	}
+	
+	auto renderer_sdl_cpu::put_glyph_impl(position p_pos, glyph_type p_glyph, color p_front, color p_back)
+		-> void
+	{
 		// Calculate index into framebuffer
-		auto t_index = (p_pos.y() * m_ScrW) + p_pos.x();
+		auto t_index = make_index(p_pos);
 		
 		// Create glyph data entry
 		m_Screen[t_index] = glyph_data{ p_glyph, p_front, p_back };
@@ -140,6 +160,25 @@ namespace ascii
 		init_framebuffer();
 	}
 
+	auto renderer_sdl_cpu::update_dimensions(dimensions p_val)
+		-> void
+	{
+		// Set internal state to new values
+		m_ScrH = p_val.h();
+		m_ScrW = p_val.w();
+		
+		// Update framebuffer
+		init_framebuffer();
+		
+		// Resize window accordingly
+		set_window_dims();
+	}
+	
+	auto renderer_sdl_cpu::update_title(const std::string& p_str)
+		-> void
+	{
+		SDL_SetWindowTitle(m_Window, p_str.c_str());
+	}
 
 	auto renderer_sdl_cpu::init_framebuffer()
 		-> void
@@ -164,7 +203,27 @@ namespace ascii
 		}
 	}
 
-
+	auto renderer_sdl_cpu::put_shadow(position p_pos)
+		-> void
+	{
+		// Compute index into framebuffer
+		auto t_index = make_index(p_pos);
+		
+		// Retrieve glyph data
+		auto& t_data = m_Screen[t_index];
+		
+		// Darken colours by 50%
+		auto t_bg = t_data.back().hsv();
+		auto t_fg = t_data.front().hsv();
+		
+		std::get<2>(t_bg) *= 0.5;
+		std::get<2>(t_fg) *= 0.5;
+		//
+		
+		// Save back to frame buffer
+		t_data = glyph_data{ t_data.glyph(), { from_hsv, t_fg }, { from_hsv, t_bg } };		
+	}
+	
 	auto renderer_sdl_cpu::load_texture(const renderer_params& p_params)
 		-> void
 	{
@@ -182,9 +241,15 @@ namespace ascii
 		m_GlyphW = m_GlyphSurface->w/m_GlyphsX;
 		m_GlyphH = m_GlyphSurface->h/m_GlyphsY;
 		
+		// Update actual screen size
+		set_window_dims();
+	}
+	
+	auto renderer_sdl_cpu::set_window_dims()
+		-> void
+	{
 		auto t_scrW = m_GlyphW * m_ScrW;
 		auto t_scrH = m_GlyphH * m_ScrH;
-		//
 		
 		// Update main window screen size to fit
 		SDL_SetWindowSize(m_Window, t_scrW, t_scrH);

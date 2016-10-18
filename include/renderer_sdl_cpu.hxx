@@ -11,9 +11,7 @@ namespace ascii
 {
 	auto make_rect(position p_pos, dimensions p_dim) noexcept
 		-> SDL_Rect;
-	
-	
-	
+		
 	class renderer_sdl_cpu final
 		: public renderer_base
 	{
@@ -26,19 +24,26 @@ namespace ascii
 			}
 		
 		public:
-			virtual double fps() const noexcept override;
+			virtual std::size_t ticks() const noexcept override;
 			virtual ut::string_view str() const noexcept override;
 			virtual void create(const renderer_params& p_params) override;
 			virtual void destroy() override;
 			virtual void begin_scene() override;
-			virtual void end_scene() override;
-			
+			virtual void end_scene() override;		
 			virtual void update_dimensions(dimensions p_val) override;
-			virtual void update_title(ut::string_view p_str) override;
+			virtual void update_title(const std::string& p_str) override;
 			
 		public:
+			virtual void put_string(position p_pos, ut::string_view p_str, color p_front, color p_back) override;
 			virtual void put_glyph(position p_pos, glyph_type p_glyph, color p_front, color p_back) override;
 			virtual void put_shadow(position p_pos) override;
+			
+		private:
+			// This is used to avoid virtual calls in put_str etc
+			auto put_glyph_impl(position p_pos, glyph_type p_glyph, color p_front, color p_back)
+				-> void;
+			
+			
 			
 		private:
 			auto present_screen()
@@ -51,12 +56,15 @@ namespace ascii
 				-> SDL_Texture*;
 		
 		private:
-			auto init_fps_filter() noexcept
-				-> void;
+			auto make_index(position p_pos) const noexcept
+				-> std::size_t;
 		
 			auto init_framebuffer()
 				-> void;			
-					
+				
+			auto set_window_dims()
+				-> void;
+				
 			auto set_params(const renderer_params& p_params)
 				-> void;
 				
@@ -99,6 +107,5 @@ namespace ascii
 		
 		
 			const char m_Str[8]{ "sdl_cpu" };		// Renderer identification string
-			double m_Filter[fps_filter_length];		// Moving-average fps filter
 	};
 }
