@@ -5,7 +5,8 @@
 #include <sol.hpp>
 #include <ut/utility.hxx>
 
-#include <renderer_sdl_cpu.hxx>
+#include <renderer_factory.hxx>
+#include <common.hxx>
 
 // Variables referenced by command line handler ---
 //
@@ -21,6 +22,9 @@ std::string g_LogFile;
 
 // Texture file path
 std::string g_Tex;
+
+// Renderer identification
+std::string g_Renderer;
 
 // ------------------------------------------------
 
@@ -79,6 +83,14 @@ cl::handler g_Handler
 		cl::short_name('T'),
 		cl::default_value<std::string>(""),
 		cl::reference(g_Tex)
+	},
+	
+	cl::string_argument
+	{
+		cl::long_name("renderer"),
+		cl::short_name('R'),
+		cl::default_value<std::string>(""),
+		cl::reference(g_Renderer)
 	}
 };
 
@@ -100,16 +112,21 @@ int main(int argc, char* argv[])
 		lg::logger::add_target(&t_fileTarget);
 	}	
 	
-	// Create logger
+	auto t_renderer = ascii::create_instance(g_Renderer);
+	
+	if(!t_renderer)
+	{
+		LOG_F() << "Unknown renderer plugin \"" << g_Renderer << "\"!";
+		return EXIT_FAILURE;
+	}
+	
 	ascii::renderer_params t_info{
 		ascii::dimensions{ 50, 50 },
 		"app",
 		g_Tex
 	};
 	
-	ascii::renderer_sdl_cpu t_renderer{ };
-	
-	t_renderer.create(t_info);
+	t_renderer->create(t_info);
 	
 	while(true)
 	{
@@ -128,16 +145,17 @@ int main(int argc, char* argv[])
 			}
 		}
 		
-		t_renderer.begin_scene();
+		t_renderer->begin_scene();
 		
-		for(int j = 0; j < 50; ++j)
-			for(int i = 0; i < 50; ++i)
+		for(std::size_t j = 0; j < 50; ++j)
+			for(std::size_t i = 0; i < 50; ++i)
 			{
-				t_renderer.put_glyph({i, j}, (i%16)+16*(j%16), { ascii::from_hsv, i*5, 255, 255 }, { ascii::from_hsv, 0, 0, 0 });
+				t_renderer->put_glyph({i, j}, (i%16)+16*(j%16), { ascii::from_hsv, static_cast<unsigned char>(i*5), 255, 255 }, { ascii::from_hsv, 0, 0, 0 });
 			}
 			
-		t_renderer.end_scene();
+		t_renderer->end_scene();
 	}
+	
 	
 	return EXIT_SUCCESS;
 }
