@@ -46,7 +46,7 @@ message(STATUS ${CMD_ARGS})
 
 add_custom_target(
 	generate_factory_header
-	COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/generate.py ${CMD_ARGS} > ${PROJECT_BINARY_DIR}/renderer_factory.hxx
+	COMMAND ${PYTHON_EXECUTABLE} ${PROJECT_SOURCE_DIR}/cmake/generate.py ${PROJECT_SOURCE_DIR}/cmake/templates/renderer_factory.hxx.template ${CMD_ARGS} > ${PROJECT_BINARY_DIR}/renderer_factory.hxx
 )
 
 set_source_files_properties(${PROJECT_BINARY_DIR}/renderer_factory.hxx PROPERTIES GENERATED 1)

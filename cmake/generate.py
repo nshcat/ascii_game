@@ -1,51 +1,20 @@
 import sys
+from jinja2 import Template
 
-def mk_includes(plugins):
-	str = ""
-	for x in plugins:
-		str += "#include <renderer_" + x + ".hxx>\n"
-	return str
-
-	
-def mk_cases(plugins):
-	str = ""
-	for x in plugins:
-		str += "\tif(p_str == \"" + x + "\")\n\t{\n\t\treturn new renderer_" + x + "();\n\t}\n"		
-	return str
-	
-	
-def mk_body():
-	str = """
-#include <string>
-#include <renderer_base.hxx>
-<%%INCLUDES%%>
-
-namespace ascii{
-
-static inline renderer_base* create_instance(const ::std::string& p_str)
-{
-<%%CASES%%>
-
-	return nullptr;
-}
-
-}
-"""
-	return str
-	
-	
-	
 def main(argv):
+    # We need at least 1 argument, the source file.
+    if len(argv) < 2:
+        raise Exception('Not enough arguments supplied!')
 
-	plugins = argv[1:]
-	
-	src = mk_body()
-	src = src.replace("<%%INCLUDES%%>", mk_includes(plugins))
-	src = src.replace("<%%CASES%%>", mk_cases(plugins))
-	
-	print src
-	sys.exit()
-	
-	
+    # List of all supplied renderer plugin names
+    strArgs = argv[2:]
+    
+    # Create template instance
+    template = Template(open(argv[1], 'r').read())
+    
+    # Render and print out to stdout
+    print template.render(plugins=strArgs)
+    sys.exit()
+    
 if __name__ == "__main__":
-	main(sys.argv)
+    main(sys.argv)
