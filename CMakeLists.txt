@@ -54,6 +54,17 @@ add_dependencies(ascii_game generate_factory_header)
 target_include_directories(ascii_game PUBLIC ${PROJECT_BINARY_DIR})
 ###
 
+
+# Copy assets to output path
+file(GLOB DATA_FILES assets/*.*)
+
+foreach(DATA_FILE ${DATA_FILES})
+	get_filename_component(DATA_FILE_NAME ${DATA_FILE} NAME)
+	configure_file(${DATA_FILE} ${DATA_FILE_NAME} COPYONLY)
+endforeach()
+###
+
+
 # Require support for at least C++14.
 set_property(TARGET ascii_game PROPERTY CXX_STANDARD 14)
 set_property(TARGET ascii_game PROPERTY CXX_STANDARD_REQUIRED ON)
