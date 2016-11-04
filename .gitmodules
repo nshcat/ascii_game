@@ -13,3 +13,6 @@
 [submodule "btt"]
 	path = btt
 	url = https://github.com/nshcat/btt.git
+[submodule "asio"]
+	path = asio
+	url = https://github.com/nshcat/asio.git
