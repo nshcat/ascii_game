@@ -3,10 +3,10 @@
 ##
 
 # Version requirement and project info
-cmake_minimum_required(VERSION 3.1.3)
+cmake_minimum_required(VERSION 3.3.0)
 project(ascii_game)
 
-set(ASCII_MAKE_PLUGINS "sdl-cpu" "null" CACHE STRING "Renderer plugins to build")
+set(ASCII_MAKE_PLUGINS "ALL" CACHE STRING "Renderer plugins to build")
 set(ASCII_LOADED_PLUGINS "")
 
 # Include submodule libraries
@@ -32,7 +32,7 @@ target_link_libraries(ascii_game PUBLIC ${LIBSOL2_LIBRARIES} ${LIBBTT_LIBRARIES}
 add_subdirectory(plugins)
 
 foreach(PLUGIN ${ASCII_LOADED_PLUGINS})
-	message(STATUS "Loaded plugin \"${PLUGIN}\"!")
+	message(STATUS "Registered plugin \"${PLUGIN}\"!")
 	target_link_libraries(ascii_game PUBLIC ${PLUGIN})
 endforeach()
 ###
@@ -41,8 +41,6 @@ endforeach()
 find_package(PythonInterp REQUIRED)
 
 string(REPLACE ";" " " CMD_ARGS "${ASCII_LOADED_PLUGINS}")
-
-message(STATUS ${CMD_ARGS})
 
 add_custom_target(
 	generate_factory_header
