@@ -123,7 +123,8 @@ int main(int argc, char* argv[])
 	ascii::renderer_params t_info{
 		ascii::dimensions{ 50, 50 },
 		"app",
-		g_Tex
+		g_Tex,
+		true
 	};
 	
 	t_renderer->create(t_info);
