@@ -1,12 +1,22 @@
 #include <iostream>
 #include <string>
+#include <vector>
 #include <log.hxx>
 #include <cl.hxx>
 #include <sol.hpp>
 #include <ut/utility.hxx>
 
+#include <sdl_input.hxx>
 #include <renderer_factory.hxx>
 #include <common.hxx>
+
+
+// LUA state object
+sol::state g_State;
+// SDL input wrapper
+proto::sdl_input g_Input;
+// Renderer handler
+ascii::renderer_base* g_RendererHandle;
 
 // Variables referenced by command line handler ---
 //
@@ -25,6 +35,12 @@ std::string g_Tex;
 
 // Renderer identification
 std::string g_Renderer;
+
+// Script file path
+std::string g_Script;
+
+// Additional include files
+std::vector<std::string> g_Includes;
 
 // ------------------------------------------------
 
@@ -91,9 +107,92 @@ cl::handler g_Handler
 		cl::short_name('R'),
 		cl::default_value<std::string>(""),
 		cl::reference(g_Renderer)
+	},
+	
+	cl::string_argument
+	{
+		cl::long_name("script"),
+		cl::short_name('S'),
+		cl::default_value<std::string>(""),
+		cl::reference(g_Script)
+	},
+	
+	cl::positional_argument<std::string>
+	{
+		cl::long_name("include-files"),
+		cl::short_name('I'),
+		cl::reference(g_Includes)
 	}
 };
 
+void init_bindings()
+{
+	g_State["import"] = [](std::string module)
+	{
+		g_State.script_file(module);
+	};
+	
+	g_State["quit"] = [](int code)
+	{
+		std::exit(code);
+	};
+	
+	g_State["key_down"] = [](int key) -> bool
+	{
+		return g_Input.key_down((proto::sdl_input::key_type)key);
+	};
+	
+	g_State["put_glyph_raw"] = [](	ascii::glyph_type c, std::size_t x, std::size_t y,
+								std::uint8_t r1, std::uint8_t g1, std::uint8_t b1,
+								std::uint8_t r2, std::uint8_t g2, std::uint8_t b2
+							) -> void
+	{
+		g_RendererHandle->put_glyph({x,y}, c, {ascii::from_rgb, r1, g1, b1}, {ascii::from_rgb, r2, g2, b2});
+	};
+	
+	g_State["put_shadow"] = [](std::size_t x, std::size_t y)
+	{
+		g_RendererHandle->put_shadow({x,y});
+	};
+}
+
+void init_lua()
+{
+	g_State.open_libraries(sol::lib::base, sol::lib::string);
+	
+	// Set default renderer parameters
+	g_State["renderer_vsync"] = true;
+	g_State["renderer_w"] = 50;
+	g_State["renderer_h"] = 50;
+	g_State["renderer_text"] = std::string{"app"};
+	
+	// Initialize bindings
+	init_bindings();
+	
+	// Load additional include files, if any
+	for(const auto& t_file: g_Includes)
+	{
+		g_State.script_file(t_file);
+	}
+	
+	// Load main script file
+	g_State.script_file(g_Script);
+}
+
+ascii::renderer_params get_params()
+{
+	// Call init function
+	g_State.get<std::function<void(void)>>("init")();
+	
+	// TODO bounds checks
+	// Build renderer_params object
+	return {
+		{ g_State.get<std::size_t>("renderer_w"), g_State.get<std::size_t>("renderer_h") },
+		g_State.get<std::string>("renderer_text"),
+		g_Tex,
+		g_State.get<bool>("renderer_vsync")
+	};
+}
 
 int main(int argc, char* argv[])
 {
@@ -112,49 +211,48 @@ int main(int argc, char* argv[])
 		lg::logger::add_target(&t_fileTarget);
 	}	
 	
-	auto t_renderer = ascii::create_instance(g_Renderer);
+	// Request renderer object
+	g_RendererHandle = ascii::create_instance(g_Renderer);
 	
-	if(!t_renderer)
+	if(!g_RendererHandle)
 	{
 		LOG_F() << "Unknown renderer plugin \"" << g_Renderer << "\"!";
 		return EXIT_FAILURE;
 	}
+	//
 	
-	ascii::renderer_params t_info{
-		ascii::dimensions{ 50, 50 },
-		"app",
-		g_Tex,
-		true
-	};
 	
-	t_renderer->create(t_info);
+	// Initialize LUA binding
+	init_lua();
+	//
+	
+	
+	// Construct renderer
+	ascii::renderer_params t_info = get_params();
+	g_RendererHandle->create(t_info);
+	//
+	
+	
+	// Retrieve script function references
+	auto t_onLogic = g_State.get<std::function<void(void)>>("on_logic");
+	auto t_onFrame = g_State.get<std::function<void(void)>>("on_frame");
+	//
+	
 	
 	while(true)
 	{
-		SDL_Event t_event;
+		// Process input
+		g_Input.process_events();
 		
-		while(SDL_PollEvent(&t_event))
-		{
-			switch(t_event.type)
-			{
-				case SDL_QUIT:
-					return EXIT_SUCCESS;
-					break;
-				
-				default:
-					break;
-			}
-		}
+		// Call on logic hook
+		t_onLogic();
 		
-		t_renderer->begin_scene();
+		g_RendererHandle->begin_scene();
 		
-		for(std::size_t j = 0; j < 50; ++j)
-			for(std::size_t i = 0; i < 50; ++i)
-			{
-				t_renderer->put_glyph({i, j}, (i%16)+16*(j%16), { ascii::from_hsv, static_cast<unsigned char>(i*5), 255, 255 }, { ascii::from_hsv, 0, 0, 0 });
-			}
-			
-		t_renderer->end_scene();
+		// Call on frame hook
+		t_onFrame();
+					
+		g_RendererHandle->end_scene();
 	}
 	
 	
